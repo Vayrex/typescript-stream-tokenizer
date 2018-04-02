@@ -1,21 +1,36 @@
 type INTEGER_STRING = string | number;
 
 const ZERO = 48;
+const THREE = 51;
 const SEVEN = 55;
 const NINE = 57;
 
-const DOT = 46;
-const DASH = 45;
-const TAB = 9;
-const SLASH = 47;
+const CHAR_a = 97;
+const CHAR_b = 98;
+const CHAR_f = 102;
+const CHAR_n = 110;
+const CHAR_r = 114;
+const CHAR_t = 116;
+const CHAR_v = 118;
 
-const CR = 13;
-const EOL = 10;
+const ASTERISK = 42;
+const DASH = 45;
+const DOT = 46;
+const SLASH = 47;
+const BACK_SLASH = 92;
+
+const ALERT = 7;
+const BACKSPACE = 8;
+const HORIZONTAL_TAB = 9;
+const NEW_LINE = 10;
+const VERTCAL_TAB = 11;
+const FORM_FEED = 12
+const CARRIAGE_RETURN = 13;
 
 
 export class StreamTokenizer {
 
-  private buf = new Array(20);
+  public buf = new Array();
 
   /************************************************************************************/
   private peekc = StreamTokenizer.NEED_CHAR;
@@ -46,7 +61,7 @@ export class StreamTokenizer {
   public ttype = StreamTokenizer.TT_NOTHING;
 
   public static TT_EOF = -1;
-  public static TT_EOL = EOL;
+  public static TT_EOL = NEW_LINE;
   public static TT_NUMBER = -2;
   public static TT_WORD = -3;
   public static TT_NOTHING = -4;
@@ -56,7 +71,6 @@ export class StreamTokenizer {
   public nval: number;
 
   private index = 0;
-
 
   constructor(private _input:string) {
 
@@ -72,7 +86,6 @@ export class StreamTokenizer {
     this.quoteChar("'");
     this.parseNumbers();
   }
-
 
   public resetSyntax(): void {
     for (let i = this.ctype.length; --i >= 0;) {
@@ -104,7 +117,6 @@ export class StreamTokenizer {
       this.ctype[low++] |= StreamTokenizer.CT_ALPHA;
     }
   }
-
 
   public whitespaceChars(low: INTEGER_STRING, hi: INTEGER_STRING): void {
 
@@ -191,12 +203,10 @@ export class StreamTokenizer {
     this.forceLower = fl;
   }
 
-  /** Read the next character */
   private read(): number {
     let i = this._input.charCodeAt(this.index++);
     return isNaN(i) ? -1 : i;
   }
-
 
   public nextToken(): number {
     if (this.pushedBack) {
@@ -215,7 +225,7 @@ export class StreamTokenizer {
       if (c < 0) {
         return this.ttype = StreamTokenizer.TT_EOF;
       }
-      if (c == EOL) {
+      if (c == NEW_LINE) {
         c = StreamTokenizer.NEED_CHAR;
       }
     }
@@ -230,7 +240,7 @@ export class StreamTokenizer {
 
     let ctype = c < 256 ? ct[c] : StreamTokenizer.CT_ALPHA;
     while ((ctype & StreamTokenizer.CT_WHITESPACE) != 0) {
-      if (c == CR) {
+      if (c == CARRIAGE_RETURN) {
         this.LINENO++;
         if (this.eolIsSignificantP) {
           this.peekc = StreamTokenizer.SKIP_LF;
@@ -313,8 +323,8 @@ export class StreamTokenizer {
       let i = 0;
 
       let d = this.read();
-      while (d >= 0 && d != this.ttype && d != EOL && d != CR) {
-        if (d == "\\".charCodeAt(0)) {
+      while (d >= 0 && d != this.ttype && d != NEW_LINE && d != CARRIAGE_RETURN) {
+        if (d == BACK_SLASH) {
           c = this.read();
           let first = c;
 
@@ -324,7 +334,7 @@ export class StreamTokenizer {
             if (ZERO <= c2 && c2 <= SEVEN) {
               c = (c << 3) + (c2 - ZERO);
               c2 = this.read();
-              if (ZERO <= c2 && c2 <= SEVEN && first <= "3".charCodeAt(0)) {
+              if (ZERO <= c2 && c2 <= SEVEN && first <= THREE) {
                 c = (c << 3) + (c2 - ZERO);
                 d = this.read();
               } else
@@ -333,26 +343,26 @@ export class StreamTokenizer {
               d = c2;
           } else {
             switch (c) {
-              case "a".charCodeAt(0):
-                c = 0x7;
+              case CHAR_a:
+                c = ALERT;
                 break;
-              case "b".charCodeAt(0):
-                c = "\b".charCodeAt(0);
+              case CHAR_b:
+                c = BACKSPACE;
                 break;
-              case "f".charCodeAt(0):
-                c = 0xC;
+              case CHAR_f:
+                c = FORM_FEED;
                 break;
-              case "n".charCodeAt(0):
-                c = EOL;
+              case CHAR_n:
+                c = NEW_LINE;
                 break;
-              case "r".charCodeAt(0):
-                c = CR;
+              case CHAR_r:
+                c = CARRIAGE_RETURN;
                 break;
-              case "t".charCodeAt(0):
-                c = TAB;
+              case CHAR_t:
+                c = HORIZONTAL_TAB;
                 break;
-              case "v".charCodeAt(0):
-                c = 0xB;
+              case CHAR_v:
+                c = VERTCAL_TAB;
                 break;
             }
             d = this.read();
@@ -372,17 +382,17 @@ export class StreamTokenizer {
 
     if (c == SLASH && (this.slashSlashCommentsP || this.slashStarCommentsP)) {
       c = this.read();
-      if (c == "*".charCodeAt(0) && this.slashStarCommentsP) {
+      if (c == ASTERISK && this.slashStarCommentsP) {
         let prevc = 0;
-        while ((c = this.read()) != SLASH || prevc != "*".charCodeAt(0)) {
-          if (c == CR) {
+        while ((c = this.read()) != SLASH || prevc != ASTERISK) {
+          if (c == CARRIAGE_RETURN) {
             this.LINENO++;
             c = this.read();
-            if (c == EOL) {
+            if (c == NEW_LINE) {
               c = this.read();
             }
           } else {
-            if (c == EOL) {
+            if (c == NEW_LINE) {
               this.LINENO++;
               c = this.read();
             }
@@ -393,13 +403,12 @@ export class StreamTokenizer {
         }
         return this.nextToken();
       } else if (c == SLASH && this.slashSlashCommentsP) {
-        while ((c = this.read()) != EOL && c != CR && c >= 0) ;
+        while ((c = this.read()) != NEW_LINE && c != CARRIAGE_RETURN && c >= 0) ;
         this.peekc = c;
         return this.nextToken();
       } else {
-
         if ((ct["/"] & StreamTokenizer.CT_COMMENT) != 0) {
-          while ((c = this.read()) != EOL && c != CR && c >= 0) ;
+          while ((c = this.read()) != NEW_LINE && c != CARRIAGE_RETURN && c >= 0) ;
           this.peekc = c;
           return this.nextToken();
         } else {
@@ -410,7 +419,7 @@ export class StreamTokenizer {
     }
 
     if ((ctype & StreamTokenizer.CT_COMMENT) != 0) {
-      while ((c = this.read()) != EOL && c != CR && c >= 0) ;
+      while ((c = this.read()) != NEW_LINE && c != CARRIAGE_RETURN && c >= 0) ;
       this.peekc = c;
       return this.nextToken();
     }
@@ -418,18 +427,15 @@ export class StreamTokenizer {
     return this.ttype = c;
   }
 
-
   public pushBack(): void {
     if (this.ttype != StreamTokenizer.TT_NOTHING) {
       this.pushedBack = true;
     }
   }
 
-
   public lineno(): number {
     return this.LINENO;
   }
-
 
   public toString(): string {
     let ret: string;
@@ -450,20 +456,16 @@ export class StreamTokenizer {
         ret = "NOTHING";
         break;
       default: {
-
         if (this.ttype < 256 &&
           ((this.ctype[this.ttype] & StreamTokenizer.CT_QUOTE) != 0)) {
           ret = this.sval;
           break;
         }
-
-        ret = "'";
-        ret += String.fromCharCode(this.ttype);
-        ret += "'";
+        ret = String.fromCharCode(this.ttype);
         break;
       }
     }
-    return "Token[" + ret + "], line " + this.LINENO;
-  }
 
+    return "Token['" + ret + "'], line " + this.LINENO;
+  }
 }
