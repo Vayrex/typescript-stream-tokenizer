@@ -30,8 +30,6 @@ const CARRIAGE_RETURN = 13;
 
 export class StreamTokenizer {
 
-  public buf = new Array();
-
   /************************************************************************************/
   private peekc = StreamTokenizer.NEED_CHAR;
 
@@ -215,7 +213,7 @@ export class StreamTokenizer {
     }
 
     let ct = this.ctype;
-    this.sval = null;
+    this.sval = '';
 
     let c = this.peekc;
     if (c < 0)
@@ -306,12 +304,12 @@ export class StreamTokenizer {
     if ((ctype & StreamTokenizer.CT_ALPHA) != 0) {
       let i = 0;
       do {
-        this.buf[i++] = String.fromCharCode(c);
+        this.sval += String.fromCharCode(c);
         c = this.read();
         ctype = c < 0 ? StreamTokenizer.CT_WHITESPACE : c < 256 ? ct[c] : StreamTokenizer.CT_ALPHA;
       } while ((ctype & (StreamTokenizer.CT_ALPHA | StreamTokenizer.CT_DIGIT)) != 0);
       this.peekc = c;
-      this.sval = this.buf.slice(0, i).join("");
+
       if (this.forceLower) {
         this.sval = this.sval.toLowerCase();
       }
@@ -371,12 +369,10 @@ export class StreamTokenizer {
           c = d;
           d = this.read();
         }
-        this.buf[i++] = String.fromCharCode(c);
+        this.sval += String.fromCharCode(c);
       }
 
       this.peekc = (d == this.ttype) ? StreamTokenizer.NEED_CHAR : d;
-
-      this.sval = this.buf.slice(0, i).join("");
       return this.ttype;
     }
 
