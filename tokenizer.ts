@@ -193,7 +193,8 @@ export class StreamTokenizer {
 
   /** Read the next character */
   private read(): number {
-    return this._input.charCodeAt(this.index++);
+    let i = this._input.charCodeAt(this.index++);
+    return isNaN(i) ? -1 : i;
   }
 
 
@@ -211,7 +212,7 @@ export class StreamTokenizer {
       c = StreamTokenizer.NEED_CHAR;
     if (c == StreamTokenizer.SKIP_LF) {
       c = this.read();
-      if (isNaN(c)) {
+      if (c < 0) {
         return this.ttype = StreamTokenizer.TT_EOF;
       }
       if (c == EOL) {
@@ -220,15 +221,11 @@ export class StreamTokenizer {
     }
     if (c == StreamTokenizer.NEED_CHAR) {
       c = this.read();
-      if (isNaN(c)){
+      if (c < 0){
         return this.ttype = StreamTokenizer.TT_EOF;
       }
     }
     this.ttype = c;
-    /* Just to be safe */
-    /* Set peekc so that the next invocation of nextToken will read
-     * another character unless peekc is reset in this invocation
-     */
     this.peekc = StreamTokenizer.NEED_CHAR;
 
     let ctype = c < 256 ? ct[c] : StreamTokenizer.CT_ALPHA;
@@ -290,7 +287,6 @@ export class StreamTokenizer {
           denom *= 10;
           decexp--;
         }
-        /* Do one division of a likely-to-be-more-accurate number */
         v = v / denom;
       }
       this.nval = neg ? -v : v;
@@ -305,7 +301,7 @@ export class StreamTokenizer {
         ctype = c < 0 ? StreamTokenizer.CT_WHITESPACE : c < 256 ? ct[c] : StreamTokenizer.CT_ALPHA;
       } while ((ctype & (StreamTokenizer.CT_ALPHA | StreamTokenizer.CT_DIGIT)) != 0);
       this.peekc = c;
-      this.sval = this.buf.slice(0, i).join(""); //String.copyValueOf(buf, 0, i);
+      this.sval = this.buf.slice(0, i).join("");
       if (this.forceLower) {
         this.sval = this.sval.toLowerCase();
       }
@@ -315,16 +311,13 @@ export class StreamTokenizer {
     if ((ctype & StreamTokenizer.CT_QUOTE) != 0) {
       this.ttype = c;
       let i = 0;
-      /* Invariants (because \Octal needs a lookahead):
-       *   (i)  c contains char value
-       *   (ii) d contains the lookahead
-       */
+
       let d = this.read();
       while (d >= 0 && d != this.ttype && d != EOL && d != CR) {
         if (d == "\\".charCodeAt(0)) {
           c = this.read();
           let first = c;
-          /* To allow \377, but not \477 */
+
           if (c >= ZERO && c <= SEVEN) {
             c = c - ZERO;
             let c2 = this.read();
@@ -373,7 +366,7 @@ export class StreamTokenizer {
 
       this.peekc = (d == this.ttype) ? StreamTokenizer.NEED_CHAR : d;
 
-      this.sval = this.buf.slice(0, i).join(""); //String.copyValueOf(buf, 0, i);
+      this.sval = this.buf.slice(0, i).join("");
       return this.ttype;
     }
 
@@ -394,7 +387,7 @@ export class StreamTokenizer {
               c = this.read();
             }
           }
-          if (isNaN(c))
+          if (c < 0)
             return this.ttype = StreamTokenizer.TT_EOF;
           prevc = c;
         }
